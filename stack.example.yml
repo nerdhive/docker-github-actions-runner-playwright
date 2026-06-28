@@ -1,0 +1,22 @@
+services:
+  github-runner:
+    image: ghcr.io/OWNER/REPOSITORY-github-runner:ubuntu-noble-playwright
+    restart: unless-stopped
+    environment:
+      REPO_URL: https://github.com/OWNER/REPOSITORY
+      RUNNER_NAME: mw-runner-playwright
+      RUNNER_TOKEN: REPLACE_WITH_GITHUB_RUNNER_TOKEN
+      RUNNER_WORKDIR: /runner/_work
+      EPHEMERAL: "false"
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PNPM_STORE_DIR: /pnpm-store
+    volumes:
+      - runner-work:/runner/_work
+      - pnpm-store:/pnpm-store
+
+volumes:
+  runner-work:
+  pnpm-store:
+
+# /ms-playwright is intentionally not mounted as a volume.
+# The browser payload is baked into the image and would be hidden by a volume mount.
