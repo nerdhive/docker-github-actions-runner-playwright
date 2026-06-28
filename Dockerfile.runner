@@ -49,4 +49,4 @@ RUN corepack enable \
  && pnpm store prune \
  && rm -rf /root/.npm /tmp/playwright-install/node_modules
 
-WORKDIR /runner
+WORKDIR /actions-runner
