@@ -2,7 +2,7 @@
   "name": "github-actions-runner-image",
   "private": true,
   "description": "Build context for a self-hosted GitHub Actions runner image with Playwright Chromium preinstalled.",
-  "packageManager": "pnpm@10.12.4",
+  "packageManager": "pnpm@10.34.4",
   "engines": {
     "node": ">=24 <25"
   },
