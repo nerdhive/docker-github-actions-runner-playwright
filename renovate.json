@@ -1,6 +1,101 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
-  ]
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests"
+  ],
+  "timezone": "Europe/Berlin",
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "description": "Security-relevant updates: no schedule, no minimum age, auto-merge once CI is green.",
+      "matchDatasources": ["npm", "docker"],
+      "vulnerabilityAlerts": {
+        "enabled": true,
+        "labels": ["dependencies", "security"],
+        "schedule": ["at any time"],
+        "minimumReleaseAge": null,
+        "automerge": true,
+        "automergeType": "pr",
+        "platformAutomerge": true
+      }
+    },
+    {
+      "description": "OSV-sourced vulnerability advisories for transitive deps too — same auto-merge stance as the npm vulnerabilityAlerts rule above.",
+      "matchDatasources": ["npm"],
+      "matchUpdateTypes": ["patch", "minor", "major"],
+      "osvVulnerabilityAlerts": true,
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Wait a few days before opening a PR for non-security updates, to let obviously broken releases get pulled.",
+      "minimumReleaseAge": "3 days",
+      "matchPackageNames": ["*"]
+    },
+    {
+      "description": "This image only exists to pin the Playwright browser build the kundenportal repo's CI relies on (see README) — never let this drift unreviewed. No auto-merge, even for minor/patch bumps.",
+      "groupName": "playwright",
+      "matchPackageNames": ["/^@playwright//", "/^playwright/"],
+      "automerge": false,
+      "labels": ["dependencies", "playwright-pin"]
+    },
+    {
+      "description": "Group pnpm version bumps (packageManager field + lockfile).",
+      "groupName": "pnpm",
+      "matchPackageNames": ["/^pnpm$/"]
+    },
+    {
+      "description": "Group GitHub Actions used by the build workflow.",
+      "groupName": "github-actions",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "description": "Base runner image (myoung34/github-runner) — digest-only bumps, since 'ubuntu-noble' is a rolling tag with no semver. A digest bump is the signal that upstream refreshed OS packages/security patches; each one triggers a rebuild via the paths filter on Dockerfile.runner.",
+      "groupName": "base image",
+      "matchManagers": ["dockerfile"],
+      "matchDatasources": ["docker"]
+    },
+    {
+      "description": "Auto-merge patch/minor devDependency bumps once CI is green — low risk, keeps PR volume down. Excludes the Playwright pin (handled above) and major bumps (handled below).",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "matchPackageNames": ["!/^@playwright//", "!/^playwright/"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "GitHub Actions: keep pinned to digests but let patch/minor/digest tag bumps auto-merge.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Never auto-merge major bumps — always needs a human look (e.g. a Node major bump, or the base image switching Ubuntu release).",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-upgrade"]
+    },
+    {
+      "description": "Node engines pinned intentionally (kundenportal ADR-016 stack must match) — review manually, don't auto-bump majors silently.",
+      "matchDepNames": ["node"],
+      "matchManagers": ["nvm", "npm"],
+      "matchUpdateTypes": ["major"],
+      "enabled": true,
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true,
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dependency Dashboard"
 }

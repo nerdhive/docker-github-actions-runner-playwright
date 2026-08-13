@@ -14,6 +14,19 @@ The image bakes in:
 
 The installed browser version follows the `@playwright/test` version pinned in [package.json](/Users/christian/IdeaProjects/nerdhive/github-actions-runner/package.json). Update that dependency when you want the runner image to follow a different Playwright release.
 
+Renovate (`renovate.json`) tracks this dependency but never auto-merges it — kundenportal's CI depends on this pin matching its own `@playwright/test` version exactly, so a bump here always gets a human look before merge. When you bump it, also bump the matching dependency in the consuming repo (kundenportal) around the same time so the two don't drift apart while waiting on separate Renovate schedules.
+
+## Dependency policy
+
+`renovate.json` mirrors kundenportal's Renovate policy: a few days' delay before non-security PRs open, security/vulnerability updates merge immediately once green, major bumps always need a human, and GitHub Actions/base-image digests stay pinned (`helpers:pinGitHubActionDigests`, `docker:pinDigests`).
+
+**Ubuntu/apt packages (`ffmpeg`, `curl`, `ca-certificates`, `xz-utils`) are not Renovate-trackable.** They're installed unpinned in `Dockerfile.runner`, and Renovate has no datasource for Ubuntu's apt repositories — there's no version string to diff against. Two things stand in for that instead:
+
+- The base image `myoung34/github-runner:ubuntu-noble` is digest-pinned (`docker:pinDigests`), so a Renovate PR appears whenever upstream publishes a new build — a reasonable proxy signal for "the OS layer changed upstream."
+- `build-runner-image.yml` also rebuilds on a weekly schedule (`cron: '0 4 * * 1'`) independent of any dependency bump, with `CACHEBUST` busting the apt-install layer's cache so `apt-get update && install` re-resolves against Ubuntu's current noble repo each time. This is what actually keeps `ffmpeg`/`curl`/`ca-certificates` current — not a Renovate PR.
+
+If a specific apt package ever needs a hard version floor (e.g. a CVE fix that must land immediately, not wait for Monday's cron), pin it explicitly in the `apt-get install` line (`ffmpeg=<version>`) and trigger `workflow_dispatch` manually — Renovate still won't track it, but a manual pin makes the requirement visible in the diff.
+
 ## Build and push
 
 Use the GitHub Actions workflow in [.github/workflows/build-runner-image.yml](/Users/christian/IdeaProjects/nerdhive/github-actions-runner/.github/workflows/build-runner-image.yml).
@@ -48,13 +61,9 @@ Important volume behavior:
 
 ## CI usage note
 
-Once this image is in use, the workflow running inside the runner should no longer need to execute:
+Once the runner image's `@playwright/test` pin matches the consuming repo's exactly, `playwright install --with-deps chromium` in that repo's CI becomes a near-no-op — Playwright checks the version folder already on the persistent `/ms-playwright` volume and skips the download.
 
-```bash
-pnpm --filter @nerdhive/web exec playwright install --with-deps chromium
-```
-
-You can keep a lightweight smoke check like this if desired:
+Keep the step anyway rather than removing it. The two pins are bumped by two independent Renovate schedules in two different repos, so nothing guarantees they land in the same order at the same time; without this step, a moment of drift between them would run tests against a mismatched Chromium build with no error message. With it, drift just costs one slightly-slower CI step instead of a silent, hard-to-diagnose test failure. A useful smoke check alongside it:
 
 ```bash
 ffmpeg -version
