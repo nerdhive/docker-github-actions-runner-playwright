@@ -12,6 +12,14 @@ on:
       - pnpm-workspace.yaml
       - "**/package.json"
       - .github/workflows/build-runner-image.yml
+  schedule:
+    # Weekly rebuild to pick up Ubuntu noble security/package updates for the
+    # apt-installed OS deps (ca-certificates, curl, ffmpeg, xz-utils) baked
+    # into Dockerfile.runner. Those packages have no version pin Renovate can
+    # track, so a scheduled rebuild — with CACHEBUST busting the apt layer's
+    # cache below — is what keeps them current instead of frozen at whatever
+    # was latest the last time someone touched the Dockerfile.
+    - cron: '0 4 * * 1'
 
 permissions:
   contents: read
@@ -54,5 +62,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CACHEBUST=${{ github.event_name == 'schedule' && github.run_id || '0' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

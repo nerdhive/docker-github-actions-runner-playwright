@@ -4,6 +4,13 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG NODE_VERSION=24.11.1
 ARG PNPM_VERSION=10.12.4
+# Unpinned apt packages below (ca-certificates, curl, ffmpeg, xz-utils) have no
+# version string, so Renovate has nothing to bump. CACHEBUST is set to the
+# workflow run ID only on the scheduled weekly rebuild (see
+# build-runner-image.yml), which busts this layer's build cache so
+# `apt-get update && install` actually re-resolves against Ubuntu's current
+# noble repo instead of reusing a stale cached layer.
+ARG CACHEBUST=0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
@@ -15,7 +22,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 USER root
 WORKDIR /tmp/playwright-install
 
-RUN apt-get update \
+RUN echo "cachebust=${CACHEBUST}" > /dev/null \
+ && apt-get update \
  && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
