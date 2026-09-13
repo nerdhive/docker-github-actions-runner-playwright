@@ -1,4 +1,4 @@
-FROM myoung34/github-runner:ubuntu-noble
+FROM myoung34/github-runner:ubuntu-noble@sha256:e296eae61d13a4eb4f88c5cef4d911019bebfbbcf3ded179e96cc1bf5d09c98b
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
