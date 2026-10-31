@@ -4,7 +4,7 @@
   "description": "Build context for a self-hosted GitHub Actions runner image with Playwright Chromium preinstalled.",
   "packageManager": "pnpm@11.21.0",
   "engines": {
-    "node": ">=24 <25"
+    "node": ">=24 <27"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1"
